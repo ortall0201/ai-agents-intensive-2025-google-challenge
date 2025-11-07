@@ -19,11 +19,11 @@
 Just scaffolded my learning repo with Claude Code in under 10 minutes.
 Here's what I'm diving into:
 
-Day 1: Agent fundamentals
-Day 2: Multi-agent architectures
-Day 3: Tools, memory & RAG
-Day 4: Evaluation & scaling
-Day 5: Capstone project
+Day 1: Introduction to Agents & Agentic Architectures
+Day 2: Agent Tools & Interoperability
+Day 3: Context Engineering & Memory
+Day 4: Quality, Logging & Evaluation
+Day 5: Prototype to Production & Capstone Project
 
 Following along?
 📂 Repo: [link]
