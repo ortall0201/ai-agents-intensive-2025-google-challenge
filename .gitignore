@@ -44,3 +44,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Private/Personal notebooks
+day1_intro_to_agents/content-writer-using-multi-agent-system-with-adk.ipynb
