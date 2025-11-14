@@ -1637,6 +1637,72 @@ result = await memory_service.search_memory(
 
 ---
 
+## Mistake 10: No Observability in Production
+
+```python
+# ❌ BAD - Flying blind
+runner = InMemoryRunner(
+    agent=my_agent
+    # No plugins = no logs when things break!
+)
+
+# ✅ GOOD - Standard observability
+from google.adk.plugins.logging_plugin import LoggingPlugin
+
+runner = InMemoryRunner(
+    agent=my_agent,
+    plugins=[LoggingPlugin()]  # Automatic logging
+)
+
+# ✅ BETTER - Custom tracking too
+runner = InMemoryRunner(
+    agent=my_agent,
+    plugins=[
+        LoggingPlugin(),      # Standard logs
+        MyCustomTracker()     # Business metrics
+    ]
+)
+```
+
+---
+
+## Mistake 11: Only Static Tests (or No Tests!)
+
+```python
+# ❌ BAD - No testing at all
+# Deploy to production, hope for the best
+
+# ❌ ALSO BAD - Only happy path tests
+# Static tests miss edge cases, natural language variations
+
+# ✅ GOOD - Combined strategy
+# 1. Static tests for regression (fast, known scenarios)
+# 2. User simulation for exploration (edge cases, conversation flow)
+
+# Static test (tests.evalset.json)
+{
+  "eval_cases": [
+    {"eval_id": "basic_light_on", ...}  # Fixed test
+  ]
+}
+
+# User simulation (user_sim.evalset.json)
+{
+  "eval_cases": [
+    {
+      "eval_id": "movie_night",
+      "user_simulation": {
+        "goal": "Set up for movie night",
+        "conversation_plan": "...",
+        "max_turns": 8
+      }
+    }
+  ]
+}
+```
+
+---
+
 # 🏆 Production Checklist
 
 ## Tools
@@ -1678,6 +1744,26 @@ result = await memory_service.search_memory(
 - [ ] Manual verification queries for debugging
 - [ ] Consider managed service for production (Vertex AI Memory Bank)
 
+## Observability (Day 4)
+- [ ] `LoggingPlugin()` enabled for production
+- [ ] Custom plugins for business-critical metrics
+- [ ] Error callbacks configured (`on_model_error_callback`)
+- [ ] DEBUG logs available but disabled by default
+- [ ] Metrics exported to monitoring system
+- [ ] Tool call tracking for performance optimization
+- [ ] Cost tracking plugin if budget-critical
+
+## Evaluation (Day 4)
+- [ ] Static tests (evalset) for core functionality
+- [ ] User simulation for edge case discovery
+- [ ] Both metrics configured:
+  - [ ] `response_match_score` threshold set (typically 0.8)
+  - [ ] `tool_trajectory_avg_score` threshold set (typically 1.0)
+- [ ] Tests run in CI/CD pipeline
+- [ ] Failure analysis automated
+- [ ] Test cases cover happy path + edge cases
+- [ ] Conversation scenarios test multi-turn flows
+
 ## Agent Instructions
 - [ ] Reference tools by exact function name
 - [ ] Instruct to check "status" field
@@ -1704,16 +1790,375 @@ result = await memory_service.search_memory(
 
 ---
 
-# 🔜 Day 4: Evaluation & Scaling (Coming Soon)
+# 🔍 Day 4: Observability & Evaluation
 
-_Content will be added once notebooks are available_
+## Part A: Observability (Reactive Debugging)
 
-**Expected topics:**
-- Agent evaluation metrics
-- Testing frameworks
-- Performance monitoring
-- Scaling strategies
-- Production deployment
+### **The Problem: Mysterious Agent Failures**
+
+```
+User: "Find quantum computing papers"
+Agent: "I cannot help with that request."
+You: 😭 WHY?? Prompt? Missing tools? API error?
+```
+
+**Solution**: Observability gives complete visibility into agent decision-making
+
+---
+
+### **The Three Pillars**
+
+**1. Logs** - What happened
+- Individual timestamped events
+- "Agent called google_search at 3:45 PM"
+
+**2. Traces** - Why it happened
+- Connected sequence of events
+- "User asked → Agent called tool → Tool returned → Agent responded"
+
+**3. Metrics** - How well it performed
+- Aggregated performance indicators
+- "Average response time: 2.3s, Error rate: 0.5%"
+
+---
+
+### **Development: ADK Web UI**
+
+```bash
+adk web --log_level DEBUG
+```
+
+**Features**:
+- Interactive chat interface
+- Events tab with chronological actions
+- Trace view with timing per step
+- Click any span to see detailed parameters
+
+**Debugging Flow**:
+1. Run agent in web UI
+2. Agent behaves unexpectedly
+3. Open Events tab
+4. Click problematic span
+5. Examine parameters → Find bug!
+
+---
+
+### **Production: Plugins**
+
+**Plugin** = Custom code at agent lifecycle hooks
+
+**Architecture**:
+```
+User message → before_agent → Agent thinks → before_tool
+→ Tool runs → after_tool → before_model → LLM call
+→ after_model → Response
+```
+
+**Built-in LoggingPlugin:**
+
+```python
+from google.adk.plugins.logging_plugin import LoggingPlugin
+
+runner = InMemoryRunner(
+    agent=my_agent,
+    plugins=[LoggingPlugin()]  # Auto-logging enabled!
+)
+```
+
+**Captures**:
+- ✅ User messages and agent responses
+- ✅ Timing data for performance
+- ✅ LLM requests and responses
+- ✅ Tool calls and results
+- ✅ Complete execution traces
+
+---
+
+### **Custom Plugins**
+
+**Example: Tool Call Tracker**
+
+```python
+from google.adk.plugins.base_plugin import BasePlugin
+
+class ToolCallTrackerPlugin(BasePlugin):
+    def __init__(self):
+        super().__init__(name="tool_call_tracker")
+        self.total_tool_calls = 0
+        self.tool_call_counts = {}
+
+    async def before_tool_callback(self, *, agent, callback_context):
+        """Runs BEFORE each tool call."""
+        self.total_tool_calls += 1
+        tool_name = callback_context.tool_name
+        self.tool_call_counts[tool_name] = \
+            self.tool_call_counts.get(tool_name, 0) + 1
+        logging.info(f"Tool #{self.total_tool_calls}: {tool_name}")
+
+    def get_report(self):
+        return f"Total: {self.total_tool_calls}\n" + \
+               f"Breakdown: {self.tool_call_counts}"
+```
+
+**Usage**:
+```python
+tracker = ToolCallTrackerPlugin()
+runner = InMemoryRunner(
+    agent=my_agent,
+    plugins=[LoggingPlugin(), tracker]  # Combine multiple!
+)
+```
+
+---
+
+### **When to Use What: Observability**
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Development | `adk web --log_level DEBUG` | Interactive, visual |
+| Production standard | `LoggingPlugin()` | Automated logging |
+| Custom metrics | Build custom plugin | Business-specific needs |
+| Performance tracking | Custom plugin with timing | Optimize slow paths |
+| Cost tracking | Custom plugin counting calls | Budget monitoring |
+
+---
+
+## Part B: Evaluation (Proactive Prevention)
+
+### **The Problem: Non-Deterministic Behavior**
+
+**Why Standard Testing Fails for Agents**:
+- Agents are non-deterministic (LLM variability)
+- Users give unpredictable commands
+- Small prompt changes = dramatic behavior shifts
+- Can't just test "output == expected"
+
+**Solution**: Evaluate entire decision-making process
+
+---
+
+### **Evaluation Workflow**
+
+```
+1. Create Config     → Define pass/fail thresholds
+2. Create Test Cases → Sample conversations to compare
+3. Run Agent        → Execute with test queries
+4. Compare Results  → Measure against expectations
+```
+
+---
+
+### **The Two Metrics**
+
+**1. response_match_score**
+- Measures text similarity
+- Range: 0.0 (different) to 1.0 (perfect)
+- Threshold: Often 0.8 (80% similarity)
+
+**2. tool_trajectory_avg_score**
+- Measures correct tool usage
+- Range: 0.0 (wrong tools) to 1.0 (perfect)
+- Checks: Tool names, parameters, sequence
+- Threshold: Often 1.0 (exact match required)
+
+---
+
+### **Interactive Testing: ADK Web UI**
+
+**Create Test Cases**:
+1. Have conversation in web UI
+2. Navigate to **Eval** tab
+3. Click **Create Evaluation set**
+4. Name it (e.g., "home_automation_tests")
+5. Click **Add current session**
+
+**Run Evaluation**:
+1. Check test cases to run
+2. Click **Run Evaluation**
+3. Configure metrics
+4. View Pass/Fail results
+5. Analyze failures with side-by-side comparison
+
+---
+
+### **Automated Testing: CLI**
+
+**1. Create Config** (`test_config.json`):
+```json
+{
+  "criteria": {
+    "tool_trajectory_avg_score": 1.0,
+    "response_match_score": 0.8
+  }
+}
+```
+
+**2. Create Test Cases** (`tests.evalset.json`):
+```json
+{
+  "eval_set_id": "home_automation_suite",
+  "eval_cases": [
+    {
+      "eval_id": "living_room_light_on",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Turn on the floor lamp"}]
+          },
+          "final_response": {
+            "parts": [{"text": "Successfully set the floor lamp to on."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "set_device_status",
+                "args": {"location": "living room", "device_id": "floor lamp", "status": "ON"}
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**3. Run Evaluation**:
+```bash
+adk eval home_automation_agent \
+    tests.evalset.json \
+    --config_file_path=test_config.json \
+    --print_detailed_results
+```
+
+---
+
+### **User Simulation (Dynamic Testing)**
+
+**The Problem with Static Tests**:
+- Fixed, predictable prompts
+- Can't test conversation flow
+- Miss edge cases
+- No multi-turn complexity
+
+**Solution**: LLM generates dynamic user prompts
+
+---
+
+### **Creating User Simulation**
+
+```python
+from google.adk.evaluation import ConversationScenario
+
+scenario = ConversationScenario(
+    scenario_id="movie_night_preparation",
+    goal="Set up living room for movie night",
+    conversation_plan="""
+    You are preparing for movie night with friends.
+
+    Plan:
+    1. Ask to dim the lights in the living room
+    2. Request to turn on the TV
+    3. Ask to adjust temperature (test limitation)
+    4. Request ambient lighting for mood
+
+    Be natural and conversational. Point out confusion politely.
+    Goal is complete when lights/TV controlled and you understand limitations.
+    """,
+    max_turns=8
+)
+```
+
+**Conversation Plan Best Practices**:
+
+```python
+# ❌ BAD - Too specific
+"Ask: 'Turn on the living room light'"
+
+# ✅ GOOD - Natural, flexible
+"You want light in the living room. Ask naturally."
+```
+
+---
+
+### **User Simulation Evalset**
+
+```json
+{
+  "eval_set_id": "home_automation_user_sim",
+  "eval_cases": [
+    {
+      "eval_id": "movie_night_preparation",
+      "user_simulation": {
+        "goal": "Set up living room for movie night",
+        "conversation_plan": "Step-by-step plan...",
+        "max_turns": 8
+      }
+    }
+  ]
+}
+```
+
+**Run**:
+```bash
+adk eval home_automation_agent \
+    user_simulation.evalset.json \
+    --config_file_path=test_config.json
+```
+
+---
+
+### **Static vs User Simulation**
+
+| Aspect | Static Tests | User Simulation |
+|--------|-------------|-----------------|
+| **User Prompts** | Fixed | Dynamically generated |
+| **Flow** | Single-turn | Multi-turn dialogue |
+| **Edge Cases** | Manually defined | Naturally discovered |
+| **Realism** | Limited | High |
+| **Coverage** | Happy path | Happy + edge cases |
+| **Cost** | Low | Higher (LLM usage) |
+| **Best For** | Regression testing | Exploration |
+
+---
+
+### **What User Simulation Reveals**
+
+**Example Findings**:
+
+**1. Agent Over-Promises**
+- Says "I control ALL smart devices"
+- Reality: Only has ON/OFF toggle
+- Discovered when user asked about coffee maker
+
+**2. Missing Validation**
+- Accepts any device name
+- Doesn't check if device exists
+- Discovered with non-existent devices
+
+**3. Poor Error Handling**
+- Tries to help even when it can't
+- Should state limitations clearly
+- Discovered in multi-turn conversations
+
+**4. Context Blindness**
+- Doesn't track conversation history
+- Repeats questions, loses context
+- Discovered with sequential commands
+
+---
+
+### **When to Use What: Evaluation**
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Regression testing | Static tests | Known scenarios, fast |
+| Core functionality | Static tests | Exact behavior expected |
+| Quick validation | Static tests | Low cost |
+| Edge case discovery | User simulation | Unpredictable inputs |
+| Conversation testing | User simulation | Multi-turn complexity |
+| Realistic behavior | User simulation | Natural language variation |
+| **Best Practice** | **Both combined** | **Comprehensive coverage** |
 
 ---
 
@@ -1750,6 +2195,12 @@ _Content will be added once notebooks are available_
 | Keyword search (development) | InMemoryMemoryService |
 | Math/calculations | `BuiltInCodeExecutor` |
 | Specialist delegation | `AgentTool` |
+| Development debugging | `adk web --log_level DEBUG` |
+| Production observability | `LoggingPlugin()` |
+| Custom metrics tracking | Build custom plugin |
+| Regression testing | Static tests (evalset) |
+| Edge case discovery | User simulation |
+| Comprehensive testing | Both static + user simulation |
 
 ### **Must-Remember Patterns**
 
@@ -1760,6 +2211,9 @@ _Content will be added once notebooks are available_
 5. **Memory workflow**: Initialize → Ingest → Retrieve
 6. **Memory choice**: `load_memory` for efficiency, `preload_memory` for reliability
 7. **Tool call visibility**: `load_memory` shows `function_call`, `preload_memory` is silent
+8. **Observability**: Development = Web UI, Production = LoggingPlugin
+9. **Evaluation**: Use both static tests (regression) + user simulation (exploration)
+10. **Plugin callbacks**: `before_tool_callback` / `after_tool_callback` for custom tracking
 
 ---
 
@@ -1777,9 +2231,15 @@ _Content will be added once notebooks are available_
 - **invocation_id**: Unique ID for agent execution (critical for resume)
 - **ToolContext**: ADK-provided object with state, memory, confirmation access
 - **Callback**: Function that runs at specific execution points
+- **Plugin**: Custom code that runs at agent lifecycle hooks
+- **Observability**: Logs (what) + Traces (why) + Metrics (how well)
+- **Evalset**: JSON file containing test cases for agent evaluation
+- **User Simulation**: LLM-generated dynamic user prompts for testing
+- **response_match_score**: Text similarity metric (0.0-1.0)
+- **tool_trajectory_avg_score**: Tool usage correctness metric (0.0-1.0)
 
 ---
 
-**Last Updated**: Based on Day 1-3 notebooks
-**Version**: 1.0
-**Status**: Days 4-5 pending
+**Last Updated**: Based on Day 1-4 notebooks
+**Version**: 2.0
+**Status**: Day 5 pending
