@@ -2,13 +2,13 @@
 
 ## Problem Statement: The $100K Compliance Wall
 
-As a solo developer, I built a document translation service using CrewAI. When I approached enterprises and government agencies, I hit an insurmountable barrier:
+As a team of developers, we built a document translation service using CrewAI. When we approached enterprises and government agencies, we hit an insurmountable barrier:
 
 **"Do you have SOC 2 Type II certification? GDPR compliance documentation? Liability insurance for PII exposure?"**
 
-The answer was no. These certifications cost $100K+ and take 12+ months. **I couldn't afford to sell my AI service to the customers who needed it most.**
+The answer was no. These certifications cost $100K+ and take 12+ months. **We couldn't afford to sell our AI service to the customers who needed it most.**
 
-Then, during Day 5 of this course, I had a breakthrough: **What if the customer never sends me their PII in the first place?**
+Then, during Day 5 of this course, we had a breakthrough: **What if the customer never sends us their PII in the first place?**
 
 ---
 
@@ -16,7 +16,7 @@ Then, during Day 5 of this course, I had a breakthrough: **What if the customer 
 
 ### The Learning Journey
 
-**Days 1-4:** I built the foundation. Day 1 taught me multi-agent orchestration—I created `IntakeAgent` and `ProcessingAgent` using sequential workflow patterns. Day 2 showed me how to build custom function tools for OCR extraction and PII filtering, plus the `BuiltInCodeExecutor` pattern. Day 3 introduced `DatabaseSessionService` for persistent workflows and context compaction for handling large document histories. Day 4 taught observability—`LoggingPlugin` for standard traces and custom callbacks for security audit trails.
+**Days 1-4:** We built the foundation. Day 1 taught us multi-agent orchestration—we created `IntakeAgent` and `ProcessingAgent` using sequential workflow patterns. Day 2 showed us how to build custom function tools for OCR extraction and PII filtering, plus the `BuiltInCodeExecutor` pattern. Day 3 introduced `DatabaseSessionService` for persistent workflows and context compaction for handling large document histories. Day 4 taught observability—`LoggingPlugin` for standard traces and custom callbacks for security audit trails.
 
 **Day 5: The "Aha!" Moment**
 
@@ -34,17 +34,17 @@ The customer's internal agent called an external vendor via A2A. **The vendor ne
 
 **VaaS with A2A:** Customer's Agent → Filters PII → A2A → Vendor's Agent → Vendor Never Sees Raw PII
 
-The customer deploys `RemoteA2aAgent` (their code, their responsibility). They filter PII before calling my service. **I'm a tool provider, not a data processor.** Clear liability boundary.
+The customer deploys `RemoteA2aAgent` (their code, their responsibility). They filter PII before calling our service. **We're tool providers, not data processors.** Clear liability boundary.
 
-This changes everything. I can sell to enterprises **without $100K in compliance costs** because:
+This changes everything. We can sell to enterprises **without $100K in compliance costs** because:
 - Customer deploys their own RemoteA2aAgent
 - They filter PII pre-vendor
-- I only provide translation capabilities
+- We only provide translation capabilities
 - No direct PII access = simplified compliance
 
 ---
 
-## What I Created: Two-Sided VaaS Architecture
+## What We Created: Two-Sided VaaS Architecture
 
 ### Enterprise System (Customer Side)
 
@@ -89,7 +89,7 @@ PII_PATTERNS = {
     "passport": r"\b[A-Z]{3}-\d{9}\b"
 }
 ```
-**Why regex over LLM?** Day 4's observability lesson taught me: deterministic tools are debuggable. I can log exact matches, write unit tests, and pass compliance audits.
+**Why regex over LLM?** Day 4's observability lesson taught us: deterministic tools are debuggable. We can log exact matches, write unit tests, and pass compliance audits.
 
 **4. Session Management** (Day 3)
 - `DatabaseSessionService` with SQLite for workflow persistence
@@ -108,7 +108,7 @@ class SecurityAuditPlugin(BasePlugin):
             self.log_pii_event(callback_context.tool_result)
 ```
 
-### Vendor System (Docs Translator)
+### Vendor System (Our Docs Translator Service)
 
 **Day 5: Agent Exposed via A2A**
 ```python
@@ -230,11 +230,11 @@ python main.py
 **Customer is data controller, vendor is tool provider
 ***Clear liability boundary at A2A protocol layer
 
-**For solo developers and small startups, this is game-changing.**
+**For small teams and startups, this is game-changing.**
 
 ---
 
-## If I Had More Time
+## If We Had More Time
 
 **Short-term:** Multi-language support (French, German, Arabic), Vertex AI Agent Engine deployment (Day 5b), Memory Bank integration for translation preferences.
 
@@ -242,7 +242,7 @@ python main.py
 
 **Long-term:** VaaS Marketplace where AI vendors expose capabilities via A2A, auto-compliance documentation generator, open-source `vaas-client` toolkit.
 
-**The Vision:** Every AI startup becomes a VaaS provider. Instead of $100K compliance costs blocking SMBs from enterprise sales, A2A protocol democratizes enterprise AI.
+**Our Vision:** Every AI startup becomes a VaaS provider. Instead of $100K compliance costs blocking small teams from enterprise sales, A2A protocol democratizes enterprise AI.
 
 ---
 
@@ -250,7 +250,7 @@ python main.py
 
 **Before this course:** Good AI service, couldn't sell to enterprises.
 
-**After Day 5:** Realized the solution isn't certifications—it's architecture that doesn't need them.
+**After Day 5:** We realized the solution isn't certifications—it's architecture that doesn't need them.
 
 **The progression:**
 1. Day 1: Build agents that work
