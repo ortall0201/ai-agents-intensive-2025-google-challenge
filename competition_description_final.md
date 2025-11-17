@@ -2,13 +2,13 @@
 
 ## Problem Statement: The $100K Compliance Wall
 
-I built a document translation service using CrewAI—just me, coding solo, the way most modern SaaS products start. When I approached enterprises and government agencies, I hit an insurmountable barrier:
+As a team, one of us had built a document translation service using CrewAI. When we approached enterprises and government agencies to sell it, we hit an insurmountable barrier:
 
 **"Do you have SOC 2 Type II certification? GDPR compliance documentation? Liability insurance for PII exposure?"**
 
-The answer was no. These certifications cost $100K+ and take 12+ months. **I couldn't afford to sell my AI service to the customers who needed it most.**
+The answer was no. These certifications cost $100K+ and take 12+ months. **We couldn't afford to sell our AI service to the customers who needed it most.**
 
-For this capstone, my partner and I took that solo-built service and asked: **What if the customer never sends us their PII in the first place?**
+Then, during Day 5 of this course, we had a breakthrough: **What if the customer never sends us their PII in the first place?**
 
 ---
 
@@ -36,7 +36,7 @@ The customer's internal agent called an external vendor via A2A. **The vendor ne
 
 The customer deploys `RemoteA2aAgent` (their code, their responsibility). They filter PII before calling our service. **We're tool providers, not data processors.** Clear liability boundary.
 
-This changes everything. Solo developers and small teams can sell to enterprises **without $100K in compliance costs** because:
+This changes everything. We can sell to enterprises **without $100K in compliance costs** because:
 - Customer deploys their own RemoteA2aAgent
 - They filter PII pre-vendor
 - We only provide translation capabilities
@@ -108,7 +108,7 @@ class SecurityAuditPlugin(BasePlugin):
             self.log_pii_event(callback_context.tool_result)
 ```
 
-### Vendor System (The Original Docs Translator)
+### Vendor System (Docs Translator Service)
 
 **Day 5: Agent Exposed via A2A**
 ```python
@@ -230,7 +230,7 @@ python main.py
 **Customer is data controller, vendor is tool provider
 ***Clear liability boundary at A2A protocol layer
 
-**For solo developers and indie hackers building modern SaaS, this is game-changing.**
+**For small teams and startups, this is game-changing.**
 
 ---
 
@@ -242,17 +242,15 @@ python main.py
 
 **Long-term:** VaaS Marketplace where AI vendors expose capabilities via A2A, auto-compliance documentation generator, open-source `vaas-client` toolkit.
 
-**Our Vision:** Every solo developer and small team can turn their AI service into a VaaS provider. Instead of $100K compliance costs blocking indie builders from enterprise sales, A2A protocol democratizes enterprise AI.
+**Our Vision:** Every AI startup becomes a VaaS provider. Instead of $100K compliance costs blocking small teams from enterprise sales, A2A protocol democratizes enterprise AI.
 
 ---
 
-## Conclusion: From Solo SaaS to Team Innovation
+## Conclusion: From Learning to Innovation
 
-**The reality:** I built the Docs Translator alone, the way most SaaS products start today—vibe coding, shipping fast, iterating.
+**Before this course:** Good AI service, couldn't sell to enterprises.
 
-**The barrier:** Couldn't sell to enterprises without massive compliance overhead.
-
-**The capstone breakthrough:** My partner and I learned the course material (Days 1-5), had the Day 5 A2A insight, and realized we could architect around the problem.
+**After Day 5:** We realized the solution isn't certifications—it's architecture that doesn't need them.
 
 **The progression:**
 1. Day 1: Build agents that work
@@ -261,11 +259,9 @@ python main.py
 4. Day 4: Make them observable
 5. Day 5: **Make them cross boundaries**
 
-That last step unlocked VaaS. A2A isn't just about calling external agents—**it's about creating a liability boundary that makes enterprise AI accessible to indie developers.**
+That last step unlocked VaaS. A2A isn't just about calling external agents—**it's about creating a liability boundary that makes enterprise AI accessible to small vendors.**
 
-**VaaS is a new business model** where solo builders provide specialized capabilities via A2A, customers deploy RemoteA2aAgent clients, and clear separation of concerns enables both to thrive.
-
-**This is how the indie web scales to enterprise.**
+**VaaS is a new business model** where small AI vendors provide specialized capabilities via A2A, customers deploy RemoteA2aAgent clients, and clear separation of concerns enables both to thrive.
 
 **Repository:** https://github.com/ortall0201/enterprise-gov-docs-a2a-capstone
 
