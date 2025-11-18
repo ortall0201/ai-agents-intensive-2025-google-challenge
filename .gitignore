@@ -47,3 +47,9 @@ Thumbs.db
 
 # Private/Personal notebooks
 day1_intro_to_agents/content-writer-using-multi-agent-system-with-adk.ipynb
+
+# Claude Code skills (personal only)
+.claude/
+
+# Personal roadmap (local only)
+roadmap.md
